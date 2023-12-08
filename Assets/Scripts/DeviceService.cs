@@ -1,4 +1,4 @@
-using TMPro;
+using System;
 using UnityEngine;
 
 public class DeviceService : MonoBehaviour
@@ -16,6 +16,11 @@ public class DeviceService : MonoBehaviour
     private AndroidJavaObject audioManager;
     private AndroidJavaObject currentActivity;
 
+    public static event Action<bool> onChargingChangedCallBack;
+    public static event Action<bool> onNetworkChangedCallBack;
+    public static event Action<float> onBrigtnessChangedCallBack;
+    public static event Action<float> onVolumeChangedCallBack;
+
     private void Awake()
     {
         unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
@@ -25,28 +30,51 @@ public class DeviceService : MonoBehaviour
     }
     private void FixedUpdate()
     {
-        
+        ManageChanges();
     }
 
-    public bool IsCharging()
+    private void ManageChanges()
+    {
+        if (isCharging != IsCharging())
+        {
+            onChargingChangedCallBack?.Invoke(isCharging);  
+        }
+
+        if (hasNetworkConnection != HasNetworkConnection())
+        {
+            onNetworkChangedCallBack?.Invoke(hasNetworkConnection);
+        }
+
+        if (brightness != GetBrightnessLevel())
+        {
+            onBrigtnessChangedCallBack?.Invoke(brightness);
+        }
+        
+        if (volume != GetVolumeLevel())
+        {
+            onVolumeChangedCallBack?.Invoke(volume);
+        }
+    }
+
+    private bool IsCharging()
     {
         isCharging = SystemInfo.batteryStatus == BatteryStatus.Charging;
         return isCharging;
     }
 
-    public bool HasNetworkConnection()
+    private bool HasNetworkConnection()
     {
         hasNetworkConnection = Application.internetReachability != NetworkReachability.NotReachable;
         return hasNetworkConnection;
     }
 
-    public float GetBrightnessLevel()
+    private float GetBrightnessLevel()
     {
         brightness = Screen.brightness;
         return brightness;
     }
 
-    public float GetVolumeLevel()
+    private float GetVolumeLevel()
     {
         var currentVolume = audioManager.Call<int>("getStreamVolume", 3);
         var maxVolume = audioManager.Call<int>("getStreamMaxVolume", 3);
